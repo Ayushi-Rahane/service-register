@@ -16,6 +16,7 @@ import '../data/repositories/search_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/visit_repository.dart';
 import '../domain/app_settings.dart';
+import '../services/account_gate.dart';
 import '../services/auth_service.dart';
 
 /// Overridden in main() (and in tests).
@@ -26,6 +27,18 @@ final databaseProvider = Provider<AppDatabase>(
 final authServiceProvider = Provider<AuthService>(
   (ref) => AuthService.disabled(),
 );
+
+/// Sign-in state for the sign-in-first screen. Overridden in main() with the
+/// state loaded at start-up.
+final accountGateProvider = Provider<AccountGate>((ref) {
+  final gate = AccountGate(
+    auth: ref.watch(authServiceProvider),
+    settings: ref.watch(settingsRepositoryProvider),
+    signedIn: false,
+  );
+  ref.onDispose(gate.dispose);
+  return gate;
+});
 
 final initialSettingsProvider = Provider<BusinessSettings>(
   (ref) => const BusinessSettings(),

@@ -30,7 +30,10 @@ class ServiceApp extends ConsumerStatefulWidget {
 }
 
 class _ServiceAppState extends ConsumerState<ServiceApp> {
-  late final GoRouter _router = buildRouter(onboarded: widget.onboarded);
+  late final GoRouter _router = buildRouter(
+    onboarded: widget.onboarded,
+    gate: ref.read(accountGateProvider),
+  );
   AppLifecycleListener? _lifecycle;
   ReminderScheduler? _scheduler;
   StreamSubscription<String>? _taps;

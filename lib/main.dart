@@ -6,6 +6,7 @@ import 'app.dart';
 import 'core/providers.dart';
 import 'data/local/app_database.dart';
 import 'data/repositories/settings_repository.dart';
+import 'services/account_gate.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 
@@ -27,12 +28,18 @@ Future<void> main() async {
     auth = AuthService.disabled();
   }
   await NotificationService.instance.init();
+  final gate = AccountGate(
+    auth: auth,
+    settings: settingsRepo,
+    signedIn: await AccountGate.load(settingsRepo, auth),
+  );
 
   runApp(
     ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
         authServiceProvider.overrideWithValue(auth),
+        accountGateProvider.overrideWithValue(gate),
         initialSettingsProvider.overrideWithValue(settings),
       ],
       child: ServiceApp(onboarded: settings.onboarded),

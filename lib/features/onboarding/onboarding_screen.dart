@@ -8,7 +8,8 @@ import '../../core/widgets/dialogs.dart';
 import '../../core/widgets/form_fields.dart';
 import '../../services/notification_service.dart';
 
-/// First-run setup: business details shown on invoices.
+/// First-run setup for builds without cloud backup (with cloud backup the
+/// sign-in / create-account screen collects these details instead).
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
   @override
@@ -30,7 +31,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  Future<void> _finish({bool signIn = false}) async {
+  Future<void> _finish() async {
     if (_saving || !_form.currentState!.validate()) return;
     setState(() => _saving = true);
     final s = ref
@@ -53,12 +54,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await NotificationService.instance.requestPermission();
     if (!mounted) return;
     context.go('/home');
-    if (signIn) await context.push('/sign-in');
   }
 
   @override
   Widget build(BuildContext context) {
-    final cloud = ref.watch(authServiceProvider).configured;
     return Scaffold(
       body: SafeArea(
         child: Form(
@@ -115,13 +114,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPressed: _saving ? null : _finish,
                 child: const Text('Start using the app'),
               ),
-              if (cloud) ...[
-                const SizedBox(height: Gap.sm),
-                OutlinedButton(
-                  onPressed: _saving ? null : () => _finish(signIn: true),
-                  child: const Text('Start and sign in for cloud backup'),
-                ),
-              ],
             ],
           ),
         ),

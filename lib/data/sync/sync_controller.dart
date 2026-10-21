@@ -72,14 +72,18 @@ class SyncController extends Notifier<SyncStatus> {
     );
     try {
       _subs.add(
-        Connectivity().onConnectivityChanged.listen((results) {
-          final online = results.any((r) => r != ConnectivityResult.none);
-          if (online && !_online) _scheduleSync(const Duration(seconds: 3));
-          _online = online;
-        }),
+        Connectivity().onConnectivityChanged.listen(
+          (results) {
+            final online = results.any((r) => r != ConnectivityResult.none);
+            if (online && !_online) _scheduleSync(const Duration(seconds: 3));
+            _online = online;
+          },
+          // Plugin unavailable on this platform: periodic sync still works.
+          onError: (Object _) {},
+        ),
       );
     } catch (_) {
-      // Connectivity plugin unavailable (tests): periodic sync still works.
+      // Plugin unavailable on this platform: periodic sync still works.
     }
     _periodic = Timer.periodic(
       const Duration(minutes: 5),

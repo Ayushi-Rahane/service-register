@@ -145,7 +145,7 @@ class _BackupSyncScreenState extends ConsumerState<BackupSyncScreen> {
   }
 
   Future<void> _signOut(SyncStatus s) async {
-    final auth = ref.read(authServiceProvider);
+    final gate = ref.read(accountGateProvider);
     if (s.pending > 0) {
       final ok = await confirmDialog(
         context,
@@ -159,11 +159,8 @@ class _BackupSyncScreenState extends ConsumerState<BackupSyncScreen> {
       if (!ok) return;
     }
     if (!mounted) return;
-    await runGuarded(
-      context,
-      auth.signOut,
-      success: 'Signed out. Your data is still on $thisDevice.',
-    );
+    // The sign-in screen opens once the gate reports signed out.
+    await runGuarded(context, gate.signOut);
   }
 
   @override
@@ -194,7 +191,7 @@ class _BackupSyncScreenState extends ConsumerState<BackupSyncScreen> {
                   ),
                   const SizedBox(height: Gap.md),
                   FilledButton.icon(
-                    onPressed: () => context.push('/sign-in'),
+                    onPressed: () => context.go('/welcome'),
                     icon: const Icon(Icons.login),
                     label: const Text('Sign in'),
                   ),

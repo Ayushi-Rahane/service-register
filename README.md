@@ -19,7 +19,12 @@ dart run build_runner build  # Drift code generation (already committed output i
 flutter run                  # local-only mode: no account, data stays on the phone
 ```
 
-With cloud backup (see [supabase/README.md](supabase/README.md)):
+With cloud backup (see [supabase/README.md](supabase/README.md)) the app opens
+on **Sign in / Create account**; creating an account also asks for the
+business name printed on invoices, and signing in on a new device restores
+it. Builds without cloud settings open on a local setup screen instead.
+Once signed in, the app keeps working offline; only "Sign out" (or the
+server ending the session) returns to the first screen.
 
 ```bash
 cp env/example.json env/dev.json   # fill in SUPABASE_URL and SUPABASE_ANON_KEY

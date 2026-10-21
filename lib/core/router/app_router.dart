@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/welcome_screen.dart';
 import '../../features/billing/billing_screen.dart';
 import '../../features/billing/invoice_detail_screen.dart';
 import '../../features/billing/invoice_form_screen.dart';
@@ -29,11 +30,11 @@ import '../../features/settings/templates_screen.dart';
 import '../../features/shell/home_shell.dart';
 import '../../features/sync/backup_sync_screen.dart';
 import '../../features/sync/conflicts_screen.dart';
-import '../../features/sync/sign_in_screen.dart';
 import '../../features/visits/schedule_visit_screen.dart';
 import '../../features/visits/visit_detail_screen.dart';
 import '../../features/visits/visit_form_screen.dart';
 import '../../features/visits/visits_screen.dart';
+import '../../services/account_gate.dart';
 import '../../services/document_service.dart';
 import '../../services/web_url.dart';
 
@@ -53,13 +54,17 @@ String _tabFor(String path) {
   return '/more';
 }
 
-GoRouter buildRouter({required bool onboarded}) {
+GoRouter buildRouter({required bool onboarded, required AccountGate gate}) {
   // Website: opening or refreshing the browser on an inner page has no page
   // history behind it (so no back button). Start from its tab instead.
   final start = currentWebRoute();
   final String initial;
-  if (!onboarded) {
+  if (gate.required && !gate.signedIn) {
+    initial = '/welcome';
+  } else if (!gate.required && !onboarded) {
     initial = '/onboarding';
+  } else if (start == '/welcome' || start == '/onboarding') {
+    initial = '/home';
   } else if (start != null && !_tabs.contains(start)) {
     initial = _tabFor(start);
   } else {
@@ -227,12 +232,19 @@ GoRouter buildRouter({required bool onboarded}) {
       page('/settings/templates', (_) => const TemplatesScreen()),
       page('/backup', (_) => const BackupSyncScreen()),
       page('/backup/conflicts', (_) => const ConflictsScreen()),
-      page('/sign-in', (_) => const SignInScreen()),
+      page('/welcome', (_) => const WelcomeScreen()),
       page('/pdf', (s) => PdfPreviewScreen(doc: s.extra! as GeneratedDoc)),
     ],
     // Notification payloads use short paths; map them to routes.
+    // Signing in or out switches between the welcome screen and the app.
+    refreshListenable: gate,
     redirect: (context, state) {
       final path = state.uri.path;
+      if (gate.required) {
+        final atWelcome = path == '/welcome';
+        if (!gate.signedIn) return atWelcome ? null : '/welcome';
+        if (atWelcome || path == '/onboarding') return '/home';
+      }
       if (path.startsWith('/visits/')) return '/visit/${path.substring(8)}';
       if (path.startsWith('/invoices/')) {
         return '/invoice/${path.substring(10)}';
