@@ -169,8 +169,14 @@ abstract final class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: 68,
+        // Small enough that "Companies" / "Payments" fit on one line on
+        // narrow phones (360 dp) instead of wrapping.
         labelTextStyle: WidgetStatePropertyAll(
-          text.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+          text.labelMedium?.copyWith(
+            fontSize: 12,
+            letterSpacing: 0,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       listTileTheme: const ListTileThemeData(

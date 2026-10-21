@@ -184,13 +184,12 @@ class _VisitsScreenState extends ConsumerState<VisitsScreen>
           child: StreamBody(
             stream: _stream,
             builder: (context, items) => items.isEmpty
-                ? EmptyState(
+                ? const EmptyState(
                     icon: Icons.build_outlined,
                     title: 'No visits here',
+                    // The floating "New visit" button is the action here.
                     message:
-                        'Record a visit with the button below, or schedule one from a company.',
-                    actionLabel: 'New visit',
-                    onAction: () => context.push('/visit/new'),
+                        'Tap "New visit" to record one, or schedule one from a company.',
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.only(bottom: 96),

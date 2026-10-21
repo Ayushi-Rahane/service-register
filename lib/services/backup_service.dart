@@ -214,7 +214,8 @@ class BackupService {
         await db.customStatement('DELETE FROM "${t.actualTableName}"');
       }
       await db.customStatement(
-        "DELETE FROM app_settings WHERE key LIKE 'pull_cursor:%' OR key = 'sync_owner_user_id'",
+        "DELETE FROM app_settings WHERE key LIKE 'pull_cursor:%' "
+        "OR key IN ('sync_owner_user_id', 'sync_owner_business_id')",
       );
     });
     db.notifyUpdates({for (final t in _tables) TableUpdate.onTable(t)});

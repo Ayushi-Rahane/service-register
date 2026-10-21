@@ -51,17 +51,24 @@ class HomeShell extends StatelessWidget {
         }
         return Scaffold(
           body: shell,
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: shell.currentIndex,
-            onDestinationSelected: _go,
-            destinations: [
-              for (final (icon, selected, label) in items)
-                NavigationDestination(
-                  icon: Icon(icon),
-                  selectedIcon: Icon(selected),
-                  label: label,
-                ),
-            ],
+          // Labels keep their size even with large system text, so the five
+          // tabs always fit (page content still follows the text setting).
+          bottomNavigationBar: MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.noScaling),
+            child: NavigationBar(
+              selectedIndex: shell.currentIndex,
+              onDestinationSelected: _go,
+              destinations: [
+                for (final (icon, selected, label) in items)
+                  NavigationDestination(
+                    icon: Icon(icon),
+                    selectedIcon: Icon(selected),
+                    label: label,
+                  ),
+              ],
+            ),
           ),
         );
       },

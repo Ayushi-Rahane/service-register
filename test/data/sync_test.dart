@@ -183,4 +183,114 @@ void main() {
       await phoneB.close();
     },
   );
+
+  group('switching accounts on one device', () {
+    Future<int> count(TestEnv env) async =>
+        (await env.db.select(env.db.companies).get()).length;
+
+    test('first sign-in adopts the local records', () async {
+      final env = TestEnv();
+      await env.addCompany('Shree');
+      final sync = syncFor(env, FakeRemote(), tmp);
+      var wiped = false;
+      expect(
+        await sync.ensureAccount(
+          userId: 'user-a',
+          clearLocalData: () async => wiped = true,
+        ),
+        isNull,
+      );
+      expect(wiped, isFalse);
+      expect(await count(env), 1);
+      await env.close();
+    });
+
+    test('another account of the same business keeps the records', () async {
+      final env = TestEnv();
+      final remote = FakeRemote();
+      final sync = syncFor(env, remote, tmp);
+      await env.addCompany('Shree');
+      await sync.ensureAccount(userId: 'daughter', clearLocalData: () async {});
+      await sync.syncNow();
+      var wiped = false;
+      expect(
+        await sync.ensureAccount(
+          userId: 'father',
+          clearLocalData: () async => wiped = true,
+        ),
+        isNull,
+      );
+      expect(wiped, isFalse);
+      await env.close();
+    });
+
+    test(
+      'fully uploaded copy is replaced when a different account signs in',
+      () async {
+        final env = TestEnv();
+        final remote = FakeRemote();
+        final sync = syncFor(env, remote, tmp);
+        await env.addCompany('Shree');
+        await sync.ensureAccount(userId: 'user-a', clearLocalData: () async {});
+        await sync.syncNow();
+        expect(await env.db.select(env.db.syncOutbox).get(), isEmpty);
+
+        remote.business = 'biz-2';
+        var wiped = false;
+        expect(
+          await sync.ensureAccount(
+            userId: 'user-b',
+            clearLocalData: () async => wiped = true,
+          ),
+          isNull,
+        );
+        expect(wiped, isTrue);
+        await env.close();
+      },
+    );
+
+    test(
+      'changes not yet uploaded block a different account (nothing lost)',
+      () async {
+        final env = TestEnv();
+        final remote = FakeRemote();
+        final sync = syncFor(env, remote, tmp);
+        await sync.ensureAccount(userId: 'user-a', clearLocalData: () async {});
+        await env.addCompany('Not uploaded yet');
+
+        remote.business = 'biz-2';
+        var wiped = false;
+        final message = await sync.ensureAccount(
+          userId: 'user-b',
+          clearLocalData: () async => wiped = true,
+        );
+        expect(message, contains('not uploaded yet'));
+        expect(wiped, isFalse);
+        expect(await count(env), 1);
+        await env.close();
+      },
+    );
+
+    test(
+      'devices from before this check (user id only) keep working',
+      () async {
+        final env = TestEnv();
+        final settings = SettingsRepository(env.db);
+        await settings.setValue(SyncService.ownerKey, 'user-a');
+        await env.addCompany('Shree');
+        final sync = syncFor(env, FakeRemote(), tmp);
+        var wiped = false;
+        expect(
+          await sync.ensureAccount(
+            userId: 'user-a',
+            clearLocalData: () async => wiped = true,
+          ),
+          isNull,
+        );
+        expect(wiped, isFalse);
+        expect(await settings.getValue(SyncService.businessKey), 'biz-1');
+        await env.close();
+      },
+    );
+  });
 }

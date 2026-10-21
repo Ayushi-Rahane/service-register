@@ -274,4 +274,28 @@ void main() {
       await disposeApp(tester, db);
     },
   );
+
+  testWidgets(
+    'large system text: tab labels keep their size; one "New visit" button',
+    (tester) async {
+      final db = await pumpApp(tester);
+      double labelHeight() =>
+          tester.getSize(find.text('Companies').last).height;
+      final normal = labelHeight();
+      // Phone / browser text size turned up (as on the reported iPhone).
+      tester.platformDispatcher.textScaleFactorTestValue = 1.4;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await settle(tester);
+      expect(
+        labelHeight(),
+        normal,
+        reason: 'tab labels must not grow and wrap',
+      );
+
+      await tester.tap(find.text('Visits').last);
+      await settle(tester);
+      expect(find.text('New visit'), findsOneWidget);
+      await disposeApp(tester, db);
+    },
+  );
 }

@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
+import '../../core/config/env.dart';
 import '../../core/utils/ids.dart';
 import '../local/app_database.dart';
 import '../repositories/attachment_repository.dart';
@@ -142,6 +143,42 @@ class SyncService {
       _running = null;
     }
     return report;
+  }
+
+  static const ownerKey = 'sync_owner_user_id';
+  static const businessKey = 'sync_owner_business_id';
+
+  /// The records on this device belong to one business (one cloud account,
+  /// or several accounts sharing a business). Checks that [userId] belongs to
+  /// it before syncing. If it doesn't:
+  /// * nothing waiting to upload -> the local copy is only a cache of the
+  ///   other account's cloud data: [clearLocalData] and load this account;
+  /// * changes waiting to upload -> refuse (returns the message), so they are
+  ///   never mixed into, or lost to, the wrong account.
+  Future<String?> ensureAccount({
+    required String userId,
+    required Future<void> Function() clearLocalData,
+  }) async {
+    final business = await remote.businessId();
+    final ownerUser = await settings.getValue(ownerKey);
+    final ownerBusiness = await settings.getValue(businessKey);
+    final sameAccount =
+        ownerBusiness == business ||
+        (ownerBusiness == null && (ownerUser == null || ownerUser == userId));
+    if (!sameAccount) {
+      final pending = await db
+          .customSelect('SELECT COUNT(*) AS n FROM sync_outbox')
+          .getSingle();
+      if (pending.read<int>('n') > 0) {
+        return 'Records on $thisDevice include changes from another account '
+            'that are not uploaded yet. Sign in with that account first so they '
+            'are saved, or remove the data from $thisDevice (Backup & sync).';
+      }
+      await clearLocalData();
+    }
+    await settings.setValue(ownerKey, userId);
+    await settings.setValue(businessKey, business);
+    return null;
   }
 
   // ---------------------------------------------------------------------------

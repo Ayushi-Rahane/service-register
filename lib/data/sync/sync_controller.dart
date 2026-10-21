@@ -4,11 +4,18 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/config/env.dart';
 import '../../core/providers.dart';
+import '../../services/backup_service.dart';
 import 'supabase_remote.dart';
 import 'sync_remote.dart';
 import 'sync_service.dart';
+
+final _backupProvider = Provider(
+  (ref) => BackupService(
+    ref.watch(databaseProvider),
+    ref.watch(documentsDirProvider),
+  ),
+);
 
 /// Owns automatic synchronisation and exposes its status to the UI.
 class SyncController extends Notifier<SyncStatus> {
@@ -88,23 +95,14 @@ class SyncController extends Notifier<SyncStatus> {
     return const SyncStatus(phase: SyncPhase.signedOut);
   }
 
-  /// Local data belongs to the first account that synced it. A different
-  /// account must never receive (or mix with) another account's records.
-  Future<String?> _accountMismatch() async {
+  Future<String?> _checkAccount(SyncService svc) async {
     final user = ref.read(authServiceProvider).currentUser;
     if (user == null) return null;
-    final settings = ref.read(settingsRepositoryProvider);
-    final owner = await settings.getValue(ownerKey);
-    if (owner == null) {
-      await settings.setValue(ownerKey, user.id);
-      return null;
-    }
-    if (owner == user.id) return null;
-    return 'This phone holds records of another account. Sign in with that account, '
-        'or remove the data from $thisDevice first (Backup & sync).';
+    return svc.ensureAccount(
+      userId: user.id,
+      clearLocalData: ref.read(_backupProvider).wipeLocal,
+    );
   }
-
-  static const ownerKey = 'sync_owner_user_id';
 
   SyncService _buildService() => SyncService(
     db: ref.read(databaseProvider),
@@ -150,13 +148,13 @@ class SyncController extends Notifier<SyncStatus> {
           : 'Sign in to back up your data';
     }
     if (state.phase == SyncPhase.syncing) return null;
-    final mismatch = await _accountMismatch();
-    if (mismatch != null) {
-      state = state.copyWith(phase: SyncPhase.error, lastError: mismatch);
-      return mismatch;
-    }
     state = state.copyWith(phase: SyncPhase.syncing);
     try {
+      final mismatch = await _checkAccount(svc);
+      if (mismatch != null) {
+        state = state.copyWith(phase: SyncPhase.error, lastError: mismatch);
+        return mismatch;
+      }
       await svc.syncNow();
       state = state.copyWith(
         phase: SyncPhase.idle,

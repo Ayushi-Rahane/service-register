@@ -20,8 +20,11 @@ class FakeRemote implements SyncRemote {
   List<Map<String, Object?>> rows(String table) =>
       (tables[table] ?? {}).values.toList();
 
+  /// Business of the signed-in user (tests switch it to simulate accounts).
+  String business = 'biz-1';
+
   @override
-  Future<String> businessId() async => 'biz-1';
+  Future<String> businessId() async => business;
 
   @override
   Future<List<PushResult>> push(
@@ -46,7 +49,7 @@ class FakeRemote implements SyncRemote {
         final rev = ((existing?['rev'] as int?) ?? 0) + 1;
         t[c.id] = {
           ...c.data,
-          'business_id': 'biz-1',
+          'business_id': business,
           'rev': rev,
           'server_updated_at': _tick().toIso8601String(),
           'updated_by_device': deviceId,

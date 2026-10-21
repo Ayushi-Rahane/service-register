@@ -123,13 +123,13 @@ class _CompaniesScreenState extends ConsumerState<CompaniesScreen> {
                         icon: Icons.search_off,
                         title: 'No matching companies',
                       )
-                    : EmptyState(
+                    : const EmptyState(
                         icon: Icons.apartment,
                         title: 'No companies yet',
+                        // The floating "Add company" button is the action.
                         message:
-                            'Add the companies you service. You can then add their machines and record visits.',
-                        actionLabel: 'Add company',
-                        onAction: () => context.push('/company/new'),
+                            'Tap "Add company" to add the companies you service. '
+                            'You can then add their machines and record visits.',
                       );
               }
               return ListView.separated(
