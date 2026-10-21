@@ -75,3 +75,10 @@ supabase/tests/run_schema_tests.sh
 
 With the Supabase CLI you can also run the real stack: `supabase start` then
 `supabase db reset`.
+
+## Two people, same records
+
+Each sign-up gets its own empty business. To let a second account (e.g. a
+family member) use the same records as an existing one, edit the two emails
+in `share_business.sql` and run it in the SQL Editor. It refuses to run if
+the second account already has records of its own.
