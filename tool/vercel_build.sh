@@ -18,6 +18,14 @@ flutter config --no-analytics --enable-web >/dev/null
 
 : "${SUPABASE_URL:?Set SUPABASE_URL in Vercel → Project → Settings → Environment Variables}"
 : "${SUPABASE_ANON_KEY:?Set SUPABASE_ANON_KEY in Vercel → Project → Settings → Environment Variables}"
+# Pasted values often carry a stray line break / space; neither value can
+# legitimately contain whitespace or quotes, so strip them.
+SUPABASE_URL="$(printf '%s' "$SUPABASE_URL" | tr -d '[:space:][:cntrl:]"')"
+SUPABASE_ANON_KEY="$(printf '%s' "$SUPABASE_ANON_KEY" | tr -d '[:space:][:cntrl:]"')"
+case "$SUPABASE_URL" in
+  https://*) ;;
+  *) echo "SUPABASE_URL must start with https:// (check the value in Vercel)"; exit 1 ;;
+esac
 mkdir -p env
 printf '{\n  "SUPABASE_URL": "%s",\n  "SUPABASE_ANON_KEY": "%s"\n}\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > env/prod.json
 
