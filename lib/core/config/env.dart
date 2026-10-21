@@ -11,7 +11,10 @@ abstract final class Env {
   static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   static bool get cloudConfigured =>
-      supabaseUrl.startsWith('https://') &&
+      (supabaseUrl.startsWith('https://') ||
+          // Local test servers only.
+          supabaseUrl.startsWith('http://127.0.0.1') ||
+          supabaseUrl.startsWith('http://localhost')) &&
       !supabaseUrl.contains('YOUR-PROJECT') &&
       supabaseAnonKey.length > 20;
 }
